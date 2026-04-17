@@ -1,7 +1,8 @@
-import javax.swing.*;
 import java.awt.*;
 import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.StringSelection;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -12,76 +13,84 @@ import javax.sound.sampled.*;
 public class Main {
     private static final int SAMPLE_RATE = 16000;
     private static final int BUFFER_SIZE = 4096;
-    private static volatile boolean listening = false;
+    private static volatile boolean recording = false;
+    private static volatile boolean inputReceived = false;
+    private static TrayIcon trayIcon;
 
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> createAndShowGUI());
+        startApp();
     }
 
-    private static void createAndShowGUI() {
-        JFrame frame = new JFrame("Voice to Clipboard - Whisper");
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setSize(450, 220);
-        frame.setLocationRelativeTo(null);
+    private static void startApp() {
+        if (!SystemTray.isSupported()) {
+            System.err.println("SystemTray not supported");
+            System.exit(1);
+        }
 
-        JLabel statusLabel = new JLabel("Click 'Start' to begin listening", SwingConstants.CENTER);
-        statusLabel.setFont(new Font("Arial", Font.PLAIN, 14));
+        PopupMenu popupMenu = new PopupMenu();
+        popupMenu.add(new MenuItem("Press & hold to record"));
 
-        JButton startButton = new JButton("Start Listening");
-        JButton stopButton = new JButton("Stop & Copy");
-        stopButton.setEnabled(false);
-
-        JPanel buttonPanel = new JPanel(new FlowLayout());
-        buttonPanel.add(startButton);
-        buttonPanel.add(stopButton);
-
-        frame.setLayout(new BorderLayout(10, 10));
-        frame.add(statusLabel, BorderLayout.CENTER);
-        frame.add(buttonPanel, BorderLayout.SOUTH);
-        frame.setVisible(true);
-
-        startButton.addActionListener(e -> {
-            listening = true;
-            statusLabel.setText("Listening... Speak now!");
-            startButton.setEnabled(false);
-            stopButton.setEnabled(true);
-
-            new Thread(() -> {
-                try {
-                    statusLabel.setText("Recording...");
-                    Path tempFile = captureAudio();
-                    if (tempFile != null) {
-                        statusLabel.setText("Transcribing...");
-                        String result = transcribeWithWhisper(tempFile.toFile().getAbsolutePath());
-                        Files.deleteIfExists(tempFile);
-                        if (result != null && !result.isEmpty()) {
-                            copyToClipboard(result);
-                            SwingUtilities.invokeLater(() ->
-                                statusLabel.setText("Copied: \"" + result + "\""));
-                        } else {
-                            SwingUtilities.invokeLater(() ->
-                                statusLabel.setText("No speech detected"));
-                        }
-                    }
-                } catch (Exception ex) {
-                    ex.printStackTrace();
-                    SwingUtilities.invokeLater(() ->
-                        statusLabel.setText("Error: " + ex.getMessage()));
-                } finally {
-                    SwingUtilities.invokeLater(() -> {
-                        startButton.setEnabled(true);
-                        stopButton.setEnabled(false);
-                    });
+        trayIcon = new TrayIcon(Toolkit.getDefaultToolkit().getImage(""), "Voice to Clipboard", popupMenu);
+        trayIcon.setImageAutoSize(true);
+        trayIcon.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent e) {
+                if (!inputReceived) {
+                    inputReceived = true;
+                    recording = true;
+                    showStatus("Recording... Speak now!");
+                    processRecording();
                 }
-            }).start();
+            }
+
+            @Override
+            public void mouseReleased(MouseEvent e) {
+                if (recording) {
+                    recording = false;
+                    showStatus("Stopped");
+                }
+            }
         });
 
-        stopButton.addActionListener(e -> {
-            listening = false;
-            startButton.setEnabled(true);
-            stopButton.setEnabled(false);
-            statusLabel.setText("Click 'Start' to begin listening");
-        });
+        try {
+            SystemTray.getSystemTray().add(trayIcon);
+        } catch (AWTException e) {
+            System.err.println("Failed to add tray icon: " + e.getMessage());
+            System.exit(1);
+        }
+
+        showStatus("Ready - press & hold tray icon to record");
+    }
+
+    private static void showStatus(String message) {
+        if (trayIcon != null) {
+            trayIcon.setToolTip(message);
+        }
+        System.out.println(message);
+    }
+
+    private static void processRecording() {
+        new Thread(() -> {
+            try {
+                Path tempFile = captureAudio();
+                if (tempFile != null) {
+                    showStatus("Transcribing...");
+                    String result = transcribeWithWhisper(tempFile.toFile().getAbsolutePath());
+                    Files.deleteIfExists(tempFile);
+                    if (result != null && !result.isEmpty()) {
+                        copyToClipboard(result);
+                        showStatus("Copied: " + result);
+                    } else {
+                        showStatus("No speech detected");
+                    }
+                }
+            } catch (Exception e) {
+                System.err.println("Error: " + e.getMessage());
+                showStatus("Error: " + e.getMessage());
+            } finally {
+                inputReceived = false;
+            }
+        }).start();
     }
 
     private static Path captureAudio() throws Exception {
@@ -103,7 +112,7 @@ public class Main {
         long startTime = System.currentTimeMillis();
         long maxDuration = 30000;
 
-        while (listening && (System.currentTimeMillis() - startTime) < maxDuration) {
+        while (recording && (System.currentTimeMillis() - startTime) < maxDuration) {
             int bytesRead = microphone.read(buffer, 0, buffer.length);
             if (bytesRead > 0) {
                 audioData.write(buffer, 0, bytesRead);
@@ -140,7 +149,7 @@ public class Main {
 
     private static String transcribeWithWhisper(String audioFilePath) throws Exception {
         String venvPython = Paths.get("venv/bin/python3").toAbsolutePath().toString();
-        
+
         ProcessBuilder pb = new ProcessBuilder(
             venvPython, "-W", "ignore", "-c",
             "import whisper; model = whisper.load_model('base', device='cpu'); print(model.transcribe('" + audioFilePath + "', language='en')['text'])"
