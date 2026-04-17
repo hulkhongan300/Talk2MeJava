@@ -11,9 +11,11 @@ The goal is to create a lightweight and efficient tool that allows hands-free te
 ## 🚀 Features
 
 * 🎙️ Capture live audio from microphone
-* 🧠 Convert speech to text (speech recognition)
-* 📋 Automatically copy recognized text to clipboard
-* ⚡ Simple and minimal Java implementation
+* 🧠 Convert speech to text using local Whisper
+* 📋 Auto-copy transcription to clipboard
+* ⚡ Live transcription while speaking
+* 📊 Real-time audio level visualization
+* 🎨 Modern dark-themed GUI
 
 ---
 
@@ -76,26 +78,23 @@ java -cp "libs/*:src" Main
 
 ## 🧪 How It Works
 
-1. The program listens to microphone input.
-2. Audio is processed by a speech recognition engine.
-3. Recognized text is captured.
-4. Text is copied directly to your clipboard.
-5. You can paste it anywhere using `Ctrl + V`.
+1. Run the app - a small window appears with a G button.
+2. Press and hold G (or click and hold the G button) to record.
+3. Speak into your microphone - see audio levels in real-time.
+4. Transcription starts while you speak and clipboard updates live.
+5. Release G when done - final transcription is copied.
+6. Paste anywhere with `Ctrl + V`.
 
 ---
 
 ## ✏️ Example Usage
 
-1. Run the program
-2. Speak into your microphone:
-
-   > "Hello world, this is a test"
-3. Open any text editor and paste
-4. Output:
-
-   ```
-   Hello world, this is a test
-   ```
+1. Run the program - small dark window appears
+2. Press and hold G button
+3. Say: "Hello world, this is a test"
+4. Watch the level bars respond to your voice
+5. Release G when finished
+6. Clipboard already has the text - just paste!
 
 ---
 
@@ -109,10 +108,10 @@ java -cp "libs/*:src" Main
 
 ## 🔮 Future Improvements
 
-* Add GUI interface
 * Support multiple languages
-* Add real-time transcription display
-* Add start/stop recording controls
+* Minimize to system tray
+* Keyboard shortcuts customization
+* Save transcription history
 
 ---
 
