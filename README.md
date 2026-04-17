@@ -45,7 +45,7 @@ project-root/
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/your-username/voice-to-clipboard.git
+git clone https://github.com/hulkhongan300/Talk2MeJava?tab=readme-ov-file
 cd voice-to-clipboard
 ```
 
