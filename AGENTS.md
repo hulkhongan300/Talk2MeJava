@@ -1,44 +1,30 @@
 # AGENTS.md
 
-## Project Overview
-- **Project**: Voice-to-Clipboard Java application
-- **Language**: Java + Python (Whisper)
-- **Entry Point**: `src/Main.java`
-- **Build Tool**: Manual javac/java (no Gradle/Maven)
+## Project
+Voice-to-Clipboard Java application using local Whisper for speech recognition.
 
-## How to Build & Run
+## Build & Run
 
-### Prerequisites
-1. Create Python virtual environment and install Whisper:
-```bash
-python3 -m venv venv
-source venv/bin/activate
-pip install openai-whisper
-```
-
-### Compile
 ```bash
 javac -cp "libs/*" src/Main.java
-```
-
-### Run
-```bash
 java -cp "libs/*:src" Main
 ```
 
-## Key Files
-- `src/Main.java` - Main application (Java GUI + calls Python for transcription)
-- `transcribe.py` - Standalone transcription script (optional)
-- `venv/` - Python virtual environment with Whisper installed
+## Prerequisites
+Python venv with Whisper must exist at `venv/`. First-time run downloads ~140MB Whisper base model.
 
-## Non-Obvious Behavior
-- Program uses a simple GUI (no command-line mode)
-- Click "Start Listening" then speak - max 30 seconds
-- Click "Stop & Copy" to stop early, or it stops automatically
-- Recognized text is copied to clipboard automatically
-- Uses local Whisper (no API key needed)
-- First run downloads Whisper model (~140MB for base model)
+```bash
+python3 -m venv venv
+./venv/bin/pip install openai-whisper
+```
+
+## Key Details
+- **Entry point**: `src/Main.java`
+- **No external libs needed** - uses only Java standard library
+- **Python invocation**: Direct path `venv/bin/python3` (not activated via `source`)
+- **Recording limit**: 30 seconds max, saved as temp WAV file
+- **GUI**: Simple Swing with Start/Stop buttons, text auto-copied to clipboard
+- **transcribe.py**: Standalone script (optional, not used by main app)
 
 ## IDE
-- IntelliJ IDEA project file: `Talk2MeJava.iml`
-- Open project folder directly in IntelliJ to work
+IntelliJ IDEA project file: `Talk2MeJava.iml` - open folder directly in IntelliJ.

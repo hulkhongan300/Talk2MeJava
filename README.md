@@ -130,4 +130,4 @@ Feel free to fork this project and submit pull requests.
 
 ## 📄 License
 
-This project is open-source and available under the MIT License.
+See [LICENSE](LICENSE) for details.
