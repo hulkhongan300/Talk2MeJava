@@ -80,6 +80,8 @@ public class Main {
                     if (result != null && !result.isEmpty()) {
                         copyToClipboard(result);
                         showStatus("Copied: " + result);
+                        SystemTray.getSystemTray().remove(trayIcon);
+                        System.exit(0);
                     } else {
                         showStatus("No speech detected");
                     }
