@@ -21,7 +21,7 @@ The goal is to create a lightweight and efficient tool that allows hands-free te
 
 * Java
 * Java Sound API (for microphone input)
-* Speech Recognition API / Library (e.g., Vosk, Google Speech API, etc.)
+* Whisper (local speech recognition)
 * AWT Toolkit (for clipboard access)
 
 ---
@@ -49,30 +49,24 @@ git clone https://github.com/your-username/voice-to-clipboard.git
 cd voice-to-clipboard
 ```
 
-### 2. Add Dependencies
+### 2. Install Whisper
 
-Depending on your speech recognition choice:
+```bash
+python3 -m venv venv
+./venv/bin/pip install openai-whisper
+```
 
-* **Offline (Recommended):**
-
-    * Use Vosk API
-    * Download a language model
-
-* **Online:**
-
-    * Google Speech-to-Text API (requires API key)
-
-Place any required `.jar` files inside a `libs/` folder and include them in your classpath.
+The first run downloads the Whisper base model (~140MB).
 
 ---
 
-### 3. Compile the Program
+### 3. Compile
 
 ```bash
 javac -cp "libs/*" src/Main.java
 ```
 
-### 4. Run the Program
+### 4. Run
 
 ```bash
 java -cp "libs/*:src" Main
