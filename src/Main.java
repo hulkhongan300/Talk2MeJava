@@ -86,10 +86,10 @@ public class Main {
                         showStatus("No speech detected");
                     }
                 }
+                inputReceived = false;
             } catch (Exception e) {
                 System.err.println("Error: " + e.getMessage());
                 showStatus("Error: " + e.getMessage());
-            } finally {
                 inputReceived = false;
             }
         }).start();
