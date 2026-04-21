@@ -50,31 +50,31 @@ curl -L "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.bin
 ```bash
 git clone --depth 1 https://github.com/ggerganov/whisper.cpp.git
 cd whisper.cpp
-
-# Build with CPU optimizations
 mkdir build && cd build
 cmake .. -DCMAKE_BUILD_TYPE=Release
 make -j$(nproc)
-
-# Copy built libs
 cp libwhisper.so /path/to/Talk2MeJava/libs-native/
 
-# Build Java bindings (requires JDK + Gradle)
-cd bindings/java
+cd ../bindings/java
 ./gradlew jar
 cp build/libs/whispercpp-*.jar /path/to/Talk2MeJava/libs-native/
 ```
 
-### 4. Compile & Run
+### 4. Python Fallback (Optional - for when native fails)
+
+If native libs are unavailable, the app falls back to Python:
 
 ```bash
-# Build the project
-chmod +x setup.sh && ./setup.sh
+# Create venv and install OpenAI Whisper
+python3 -m venv venv
+./venv/bin/pip install openai-whisper
+```
 
-# Compile
+### 5. Compile & Run
+
+```bash
 javac -cp "libs-native/whispercpp-1.4.0.jar:libs/jna-5.15.0.jar" src/*.java
 
-# Run (with native libs path)
 java -Djava.library.path=libs-native \
     -cp "libs-native/whispercpp-1.4.0.jar:libs/jna-5.15.0.jar:src" Main
 ```
