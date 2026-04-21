@@ -1,126 +1,90 @@
-# 🎤 Voice-to-Clipboard Java App
+# Voice-to-Clipboard Java App
 
-## 📌 Overview
+## Overview
 
-This project is a simple Java application that captures audio input from a microphone, converts it into text using speech recognition, and automatically copies the result to the system clipboard for easy pasting.
-
-The goal is to create a lightweight and efficient tool that allows hands-free text input.
+Java desktop app that captures audio, transcribes via local Whisper, and auto-copies to clipboard. Press and hold G to record.
 
 ---
 
-## 🚀 Features
-
-* 🎙️ Capture live audio from microphone
-* 🧠 Convert speech to text using local Whisper
-* 📋 Auto-copy transcription to clipboard
-* ⚡ Live transcription while speaking
-* 📊 Real-time audio level visualization
-* 🎨 Modern dark-themed GUI
-
----
-
-## 🛠️ Technologies Used
-
-* Java
-* Java Sound API (for microphone input)
-* Whisper (local speech recognition)
-* AWT Toolkit (for clipboard access)
-
----
-
-## 📂 Project Structure
+## Project Structure
 
 ```
-project-root/
-│
-├── src/
-│   └── Main.java   # Main application entry point
-│
-├── README.md
-└── (optional) libs/  # External libraries (if needed)
+src/
+├── Main.java               # Entry point, UI orchestration
+├── Config.java             # Properties-based configuration
+├── AudioPipeline.java    # Audio capture + VAD (dedicated thread)
+├── WhisperEngine.java     # whisper.cpp JNI wrapper (singleton)
+└── TranscriptionHistory.java  # Circular buffer (last N entries)
+config.properties         # Runtime configuration
+setup.sh                  # First-time setup script
 ```
 
----
-
-## ⚙️ Setup Instructions
-
-### 1. Clone the Repository
+## Build & Run
 
 ```bash
-git clone https://github.com/hulkhongan300/Talk2MeJava?tab=readme-ov-file
-cd voice-to-clipboard
+# Setup (first time)
+chmod +x setup.sh && ./setup.sh
+
+# Compile
+javac src/*.java
+
+# Run
+java -cp src Main
 ```
 
-### 2. Install Whisper
+## Configuration (config.properties)
+
+```properties
+whisper.model=base         # tiny, base, small, medium, large
+language=en               # BCP-47 language code
+vad.silence.frames=30     # Silence frames before transcribe
+sample.rate=16000         # Target sample rate
+model.path=models/ggml-base.bin  # Path to ggml model
+```
+
+## Architecture
+
+```
+Main
+├── Config         ← Properties file, no hardcoded values
+├── AudioPipeline  ← Ring buffer, VAD, dedicated thread
+│   └── (no file writes — PCM stays in memory)
+├── WhisperEngine ← Model loaded once, JNI or Python fallback
+└── TranscriptionHistory ← Circular buffer, last 10 entries
+```
+
+### Key design decisions
+
+| Concern | Solution |
+|---------|---------|
+| JNI native lib not found | WhisperEngine falls back to Python subprocess transparently |
+| Temp WAV files | Ring buffer + PCM in byte[] — no disk I/O |
+| Fixed 3s interval | VAD: silence count triggers transcription only after speech |
+| State machine | `AtomicReference<AppState>` — IDLE, RECORDING, PROCESSING |
+| Thread safety | Separate executor thread; UI updates via `SwingUtilities.invokeLater` |
+| Resource cleanup | `finally` on mic.close(); shutdown hook closes Whisper model |
+| Clipboard history | `TranscriptionHistory` — `synchronized` circular list |
+| Level visualization | Throttled to 50ms updates to avoid EDT overload |
+
+## whisper.cpp JNI Setup (optional, recommended)
+
+For production performance, build whisper.cpp native bindings:
 
 ```bash
-python3 -m venv venv
-./venv/bin/pip install openai-whisper
+# Clone whisper.cpp
+git clone https://github.com/ggerganov/whisper.cpp
+cd whisper.cpp && mkdir build && cd build && cmake .. && make -j
+
+# Build JNI bindings
+cd bindings/jni
+mkdir build && cd build
+cmake ../..
+make
+
+# Copy native lib
+cp libwhisper-jni.so ../libs/
+mkdir -p ../models
+./models/download-ggml-model.sh base
 ```
 
-The first run downloads the Whisper base model (~140MB).
-
----
-
-### 3. Compile
-
-```bash
-javac -cp "libs/*" src/Main.java
-```
-
-### 4. Run
-
-```bash
-java -cp "libs/*:src" Main
-```
-
----
-
-## 🧪 How It Works
-
-1. Run the app - a small window appears with a G button.
-2. Press and hold G (or click and hold the G button) to record.
-3. Speak into your microphone - see audio levels in real-time.
-4. Transcription starts while you speak and clipboard updates live.
-5. Release G when done - final transcription is copied.
-6. Paste anywhere with `Ctrl + V`.
-
----
-
-## ✏️ Example Usage
-
-1. Run the program - small dark window appears
-2. Press and hold G button
-3. Say: "Hello world, this is a test"
-4. Watch the level bars respond to your voice
-5. Release G when finished
-6. Clipboard already has the text - just paste!
-
----
-
-## ⚠️ Notes
-
-* Microphone permissions must be enabled on your system.
-* Accuracy depends on the speech recognition library used.
-* Background noise may affect performance.
-
----
-
-## 🔮 Future Improvements
-
-* Support multiple languages
-* Minimize to system tray
-* Keyboard shortcuts customization
-* Save transcription history
-
----
-
-## 🤝 Contributing
-
-Feel free to fork this project and submit pull requests.
-
----
-
-## 📄 License
-
-See [LICENSE](LICENSE) for details.
+The app detects `libwhisper-jni.so` automatically and uses JNI. If not found, it falls back to Python subprocess (slower — model reloaded each time).

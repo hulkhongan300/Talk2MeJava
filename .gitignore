@@ -28,3 +28,12 @@ bin/
 
 ### Mac OS ###
 .DS_Store
+
+### Project specific ###
+whisper.cpp/           # Cloned whisper.cpp repo
+venv/                 # Python venv
+models/               # Downloaded Whisper models
+libs/                 # External JARs (whisper-jni, jna)
+libs-native/          # Built native libs
+*.properties         # Local config (add model paths, etc.)
+*.class              # Compiled Java files
